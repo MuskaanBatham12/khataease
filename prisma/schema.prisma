@@ -1,0 +1,121 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Shop {
+  id           String     @id @default(cuid())
+  ownerName    String
+  shopName     String
+  phone        String     @unique
+  email        String?
+  passwordHash String
+  upiId        String?
+  plan         String     @default("FREE") // "FREE" | "PRO"
+  language     String     @default("en")   // "en" | "hi"
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  customers    Customer[]
+  items        Item[]
+  bills        Bill[]
+  ledgers      Ledger[]
+  payments     Payment[]
+}
+
+model Customer {
+  id        String   @id @default(cuid())
+  shopId    String
+  shop      Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  name      String
+  phone     String
+  address   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  bills   Bill[]
+  ledgers Ledger[]
+
+  @@index([shopId])
+  @@index([phone])
+}
+
+model Item {
+  id        String   @id @default(cuid())
+  shopId    String
+  shop      Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  name      String
+  price     Int      // price in paise
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([shopId])
+}
+
+model Bill {
+  id          String     @id @default(cuid())
+  shopId      String
+  shop        Shop       @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  customerId  String
+  customer    Customer   @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  number      String     // e.g. KH-0001
+  total       Int        // total in paise
+  paidAmount  Int        @default(0) // in paise
+  status      String     @default("UNPAID") // "UNPAID" | "PARTIAL" | "PAID"
+  publicToken String     @unique // unguessable token for public bill viewing
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  items   BillItem[]
+  ledgers Ledger[]
+
+  @@index([shopId])
+  @@index([customerId])
+  @@index([publicToken])
+}
+
+model BillItem {
+  id     String @id @default(cuid())
+  billId String
+  bill   Bill   @relation(fields: [billId], references: [id], onDelete: Cascade)
+  name   String
+  qty    Int
+  price  Int    // price per unit in paise
+
+  @@index([billId])
+}
+
+model Ledger {
+  id         String    @id @default(cuid())
+  shopId     String
+  shop       Shop      @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  customerId String
+  customer   Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  billId     String?
+  bill       Bill?     @relation(fields: [billId], references: [id], onDelete: SetNull)
+  type       String    // "BILL" | "PAYMENT"
+  amount     Int       // amount in paise
+  note       String?
+  createdAt  DateTime  @default(now())
+
+  @@index([shopId])
+  @@index([customerId])
+  @@index([billId])
+}
+
+model Payment {
+  id                String   @id @default(cuid())
+  shopId            String
+  shop              Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  razorpayOrderId   String   @unique
+  razorpayPaymentId String?
+  amount            Int      // in paise (e.g., 19900 for 199 INR)
+  status            String   // "PENDING" | "SUCCESS" | "FAILED"
+  createdAt         DateTime @default(now())
+
+  @@index([shopId])
+}
