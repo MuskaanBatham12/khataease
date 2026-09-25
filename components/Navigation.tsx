@@ -32,10 +32,10 @@ export function Navigation({ shop }: NavigationProps) {
   const handleLogout = async () => {
     try {
       await fetch("/api/auth/logout", { method: "POST" });
-      router.push("/login");
-      router.refresh();
+      window.location.href = "/login";
     } catch (err) {
       console.error("Logout error:", err);
+      window.location.href = "/login";
     }
   };
 

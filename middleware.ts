@@ -5,10 +5,10 @@ import { AUTH_COOKIE_NAME, verifyToken } from "./lib/auth";
 const protectedRoutes = ["/dashboard", "/customers", "/bills", "/settings", "/billing"];
 const authRoutes = ["/login", "/signup"];
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const token = request.cookies.get(AUTH_COOKIE_NAME)?.value;
-  const session = token ? verifyToken(token) : null;
+  const session = token ? await verifyToken(token) : null;
 
   const isProtectedRoute = protectedRoutes.some((route) => pathname.startsWith(route));
   const isAuthRoute = authRoutes.some((route) => pathname.startsWith(route));
